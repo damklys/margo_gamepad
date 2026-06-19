@@ -1480,7 +1480,26 @@
         if (gp) {
             const battle = (document.querySelector('.battle-window')?.offsetHeight ?? 0) > 0;
 
-            // Home → toggle hints visibility
+            // DEBUG: pokaż index aktualnie wciśniętych przycisków
+            if (!window.__gpDbgEl) {
+                window.__gpDbgEl = Object.assign(document.createElement('div'), { id: '__gp_dbg' });
+                Object.assign(window.__gpDbgEl.style, {
+                    position: 'fixed', bottom: '60px', left: '50%', transform: 'translateX(-50%)',
+                    background: 'rgba(0,0,0,0.85)', color: '#f38ba8', fontFamily: 'monospace',
+                    fontSize: '18px', padding: '8px 16px', borderRadius: '8px',
+                    zIndex: '2147483647', pointerEvents: 'none', display: 'none'
+                });
+                document.documentElement.appendChild(window.__gpDbgEl);
+            }
+            const dbgPressed = gp.buttons.map((b, i) => b.pressed ? i : null).filter(x => x !== null);
+            if (dbgPressed.length) {
+                window.__gpDbgEl.textContent = 'BTN: ' + dbgPressed.join(', ');
+                window.__gpDbgEl.style.display = 'block';
+            } else {
+                window.__gpDbgEl.style.display = 'none';
+            }
+
+            // Home → toggle hints visibility (index do ustalenia po debugowaniu)
             const btnHome = !!gp.buttons[BTN_HOME]?.pressed;
             if (btnHome && !prevHome) hintsHidden = !hintsHidden;
             prevHome = btnHome;
