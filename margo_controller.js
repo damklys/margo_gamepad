@@ -4,7 +4,7 @@
     // ─── Left Joy ────────────────────────────────────────────────
 
     // GameSir Mac Nintendo Layout
-    const BTN_A = 1, BTN_B = 0, BTN_X = 3, BTN_Y = 2, BTN_L3 = 10;
+    const BTN_A = 0, BTN_B = 1, BTN_X = 2, BTN_Y = 3, BTN_L3 = 10;
 
     const AXIS_THRESHOLD = 0.3;
     const SWITCH_THR = 0.2; 
@@ -1736,7 +1736,7 @@
                     prevA = btnA;
 
                     const rx = gp.axes[2] ?? 0, ry = gp.axes[3] ?? 0;
-                    const INV_THR = 0.3, INV_DEL = 4, INV_STP = 2;
+                    const INV_THR = 0.3, INV_DEL = REP_DELAY, INV_STP = REP_STEP;
 
                     if (Math.abs(rx) > INV_THR) {
                         if (rxF === 0 || (rxF > INV_DEL && rxF % INV_STP === 0))
