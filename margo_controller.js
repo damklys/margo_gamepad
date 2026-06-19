@@ -56,6 +56,8 @@
     let relogOpen = false, relogCursor = 0, relogRxF = 0;
     let lootOpen = false, lootCursor = 0, lootOnAccept = false, lootRxF = 0, lootRyF = 0;
     let skillsWinOpen = false, skillsWinCursor = 0, skillsWinLyF = 0, skillsWinLxF = 0;
+    let widgetMenuOpen = false, widgetMenuBar = 0, widgetMenuIdx = 0;
+    let widgetMenuLxF = 0, widgetMenuLyF = 0;
     const CAPTCHA_COLS = 3, CAPTCHA_ROWS = 2;
     let captchaOpen = false, captchaC = 0, captchaR = 0, captchaLxF = 0, captchaLyF = 0;
 
@@ -334,6 +336,22 @@
             }
             .__gp_solve_hl::after {
                 content: 'Y';
+                position: absolute;
+                top: -8px; right: -8px;
+                width: 16px; height: 16px;
+                background: rgba(137,180,250,0.9); border-radius: 50%;
+                color: #1e1e2e; font-size: 10px; font-weight: bold;
+                line-height: 16px; text-align: center; font-family: sans-serif;
+                pointer-events: none; z-index: 10;
+            }
+            .__gp_widget_sel {
+                outline: 2px solid rgba(137,180,250,0.9) !important;
+                box-shadow: 0 0 8px rgba(137,180,250,0.5) !important;
+                position: relative !important;
+                overflow: visible !important;
+            }
+            .__gp_widget_sel::after {
+                content: 'X';
                 position: absolute;
                 top: -8px; right: -8px;
                 width: 16px; height: 16px;
@@ -1059,6 +1077,69 @@
         exploreHintsEl.style.top = Math.round(vr.top - cr.top + 28) + 'px';
     }
 
+    // ─── WIDGET BAR SELECTOR ──────────────────────────────────────────────────────
+
+    const WIDGET_BARS = [
+        '.top-left.main-buttons-container',
+        '.top-right.main-buttons-container',
+        '.bottom-left-additional.main-buttons-container',
+        '.bottom-left.main-buttons-container',
+        '.bottom-right.main-buttons-container',
+    ];
+
+    function getWidgetBarItems(barIdx) {
+        const bar = document.querySelector(WIDGET_BARS[barIdx]);
+        if (!bar) return [];
+        return [...bar.querySelectorAll('.widget-button.widget-in-interface-bar')]
+            .sort((a, b) => parseInt(a.style.left || '0') - parseInt(b.style.left || '0'));
+    }
+
+    function drawWidgetMenuCursor() {
+        document.querySelectorAll('.__gp_widget_sel')
+            .forEach(el => el.classList.remove('__gp_widget_sel'));
+        const items = getWidgetBarItems(widgetMenuBar);
+        if (items[widgetMenuIdx]) items[widgetMenuIdx].classList.add('__gp_widget_sel');
+    }
+
+    function openWidgetMenu() {
+        widgetMenuOpen = true;
+        widgetMenuIdx = 0;
+        for (let i = 0; i < WIDGET_BARS.length; i++) {
+            if (getWidgetBarItems(i).length > 0) { widgetMenuBar = i; break; }
+        }
+        drawWidgetMenuCursor();
+    }
+
+    function closeWidgetMenu() {
+        widgetMenuOpen = false;
+        widgetMenuLxF = 0; widgetMenuLyF = 0;
+        document.querySelectorAll('.__gp_widget_sel')
+            .forEach(el => el.classList.remove('__gp_widget_sel'));
+    }
+
+    function confirmWidgetMenu() {
+        const items = getWidgetBarItems(widgetMenuBar);
+        if (items[widgetMenuIdx]) gpClick(items[widgetMenuIdx]);
+        closeWidgetMenu();
+    }
+
+    function moveWidgetMenuIdx(d) {
+        const items = getWidgetBarItems(widgetMenuBar);
+        if (!items.length) return;
+        widgetMenuIdx = (widgetMenuIdx + d + items.length) % items.length;
+        drawWidgetMenuCursor();
+    }
+
+    function moveWidgetMenuBar(d) {
+        let next = widgetMenuBar;
+        for (let tries = 0; tries < WIDGET_BARS.length; tries++) {
+            next = (next + d + WIDGET_BARS.length) % WIDGET_BARS.length;
+            if (getWidgetBarItems(next).length > 0) { widgetMenuBar = next; break; }
+        }
+        widgetMenuIdx = 0;
+        drawWidgetMenuCursor();
+    }
+
     function clickBattleSkillSlot(slot) {
         const el = document.querySelector(`.skill-usable-slot[slot="${slot}"] .battle-skill`);
         if (el) gpClick(el);
@@ -1407,7 +1488,7 @@
             // explore hints
             if (!exploreHintsEl) createExploreHints();
             if (exploreHintsEl) {
-                const exploreActive = !battle && !gwMenuOpen && !shopOpen && !dlgOpen && !captchaOpen && !alertOpen && !lootOpen && !skillsWinOpen;
+                const exploreActive = !battle && !gwMenuOpen && !shopOpen && !dlgOpen && !captchaOpen && !alertOpen && !lootOpen && !skillsWinOpen && !widgetMenuOpen;
                 exploreHintsEl.style.display = exploreActive ? 'flex' : 'none';
                 if (exploreActive) updateExploreHintsPos();
             }
@@ -1478,11 +1559,12 @@
             }
             prevDpadD = btnDpadD;
 
-            // D-pad up → ruch (battle) / okno umiejętności (explore)
+            // D-pad up → ruch (battle) / selektor widgetów (explore toggle)
             const btnDpadU = !!gp.buttons[12]?.pressed;
             if (btnDpadU && !prevDpadU) {
                 if (battle) clickBattleSkillSlot(1);
-                else gpClick(document.querySelector('.widget-button.widget-skills'));
+                else if (widgetMenuOpen) closeWidgetMenu();
+                else openWidgetMenu();
             }
             prevDpadU = btnDpadU;
 
@@ -1558,6 +1640,8 @@
                         confirmGw();
                     } else if (skillsWinOpen) {
                         gpClick(document.querySelector('.skills-window .skill-learn-btn .button'));
+                    } else if (widgetMenuOpen) {
+                        confirmWidgetMenu();
                     } else {
                         if (dlgOpen) confirmDlg();
                         if (battle) clickBattleSkillSlot(2);
@@ -1678,6 +1762,22 @@
                     prevB = btnB;
 
                     const btnA = !!gp.buttons[BTN_A]?.pressed; prevA = btnA;
+                } else if (widgetMenuOpen) {
+                    // ─── WIDGET MENU ──────────────────────────────────────────────
+                    const lx = gp.axes[0] ?? 0, ly = gp.axes[1] ?? 0;
+                    if (Math.abs(lx) > R_THR) {
+                        if (widgetMenuLxF === 0 || (widgetMenuLxF > REP_DELAY && widgetMenuLxF % REP_STEP === 0))
+                            moveWidgetMenuIdx(lx > 0 ? 1 : -1);
+                        widgetMenuLxF++;
+                    } else { widgetMenuLxF = 0; }
+                    if (Math.abs(ly) > R_THR) {
+                        if (widgetMenuLyF === 0 || (widgetMenuLyF > REP_DELAY && widgetMenuLyF % REP_STEP === 0))
+                            moveWidgetMenuBar(ly > 0 ? 1 : -1);
+                        widgetMenuLyF++;
+                    } else { widgetMenuLyF = 0; }
+                    const btnB_wm = !!gp.buttons[BTN_B]?.pressed;
+                    if (btnB_wm && !prevB) closeWidgetMenu();
+                    prevB = btnB_wm;
                 } else if (invOpen) {
                     const btnA = !!gp.buttons[BTN_A]?.pressed;
                     if (btnA && !prevA) activateItem();
@@ -1808,7 +1908,7 @@
             }
 
             // lewy joystick → ruch kardynalny tylko w explore i poza dialogiem/sklepem
-            if (!battle && !dlgOpen && !shopOpen && !captchaOpen && !skillsWinOpen) {
+            if (!battle && !dlgOpen && !shopOpen && !captchaOpen && !skillsWinOpen && !widgetMenuOpen) {
                 updateMovement(gp.axes[0], gp.axes[1]);
             } else {
                 if (moveDir) { release(moveDir); moveDir = null; }
