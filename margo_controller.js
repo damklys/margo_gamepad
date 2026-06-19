@@ -1,14 +1,3 @@
-// ==UserScript==
-// @name         Margonem Gamepad
-// @namespace    http://tampermonkey.net/
-// @version      3.7
-// @description  Nakładka inwentarza sterowana padem
-// @match        *://*/*
-// @grant        none
-// @run-at       document-start
-// @noframes
-// ==/UserScript==
-
 (function () {
     'use strict';
 
