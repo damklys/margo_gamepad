@@ -4,7 +4,7 @@
     // ─── Left Joy ────────────────────────────────────────────────
 
     // GameSir Mac Nintendo Layout
-    const BTN_A = 0, BTN_B = 1, BTN_X = 2, BTN_Y = 3, BTN_L3 = 10;
+    const BTN_A = 0, BTN_B = 1, BTN_X = 2, BTN_Y = 3, BTN_L3 = 10, BTN_R3 = 11;
 
     const AXIS_THRESHOLD = 0.3;
     const SWITCH_THR = 0.2; 
@@ -49,11 +49,10 @@
     let invCurEl = null;
     let invOpen = false;
     let curC = 0, curR = 0, curBag = 0;
-    let prevY = false, prevL = false, prevR = false, prevA = false, prevX = false, prevB = false, prevDpadR = false, prevDpadL = false, prevDpadD = false, prevDpadU = false, prevRT = false, prevLT = false, prevL3 = false;
+    let prevY = false, prevL = false, prevR = false, prevA = false, prevX = false, prevB = false, prevDpadR = false, prevDpadL = false, prevDpadD = false, prevDpadU = false, prevRT = false, prevLT = false, prevL3 = false, prevR3 = false;
     let prevLB = false, prevRB = false;
     let rxF = 0, ryF = 0;
     let dlgOpen = false, dlgCursor = 0, dlgRyF = 0;
-    let skillOpen = false, skillCursor = 0, skillRyF = 0;
     let relogOpen = false, relogCursor = 0, relogRxF = 0;
     let lootOpen = false, lootCursor = 0, lootOnAccept = false, lootRxF = 0, lootRyF = 0;
     let skillsWinOpen = false, skillsWinCursor = 0, skillsWinLyF = 0, skillsWinLxF = 0;
@@ -74,7 +73,7 @@
     let shopCurEl = null;
     let shopMenuOpen = false, shopMenuCursor = 0, shopMenuRyF = 0;
     let gwMenuOpen = false, gwSelected = 0, gwItems = [], gwMenuEl = null, gwLtF = 0, gwRtF = 0;
-    let battleHintsEl = null, battleABadgeEl = null, prevBattle = false;
+    let battleHintsEl = null, prevBattle = false;
     let exploreHintsEl = null;
 
     function injectStyles() {
@@ -94,11 +93,6 @@
                 outline: 2px solid #89b4fa !important;
                 outline-offset: -2px !important;
                 box-shadow: 0 0 8px rgba(137,180,250,0.8) !important;
-            }
-            .menu-item-skill.__gp_skill_sel {
-                background: rgba(137,180,250,0.22) !important;
-                outline: 2px solid rgba(137,180,250,0.9) !important;
-                outline-offset: -2px !important;
             }
             .relogger__one-character.__gp_relog_sel {
                 outline: 2px solid rgba(137,180,250,0.9) !important;
@@ -157,35 +151,51 @@
                 font-family: sans-serif;
                 flex-shrink: 0;
             }
-            #__gp_battle_y_badge {
-                position: fixed;
-                pointer-events: none;
-                z-index: 2147483647;
-                display: none;
-                width: 17px; height: 17px;
-                background: #89b4fa;
-                border-radius: 50%;
-                color: #1e1e2e;
-                font-size: 10px; font-weight: bold;
-                line-height: 17px; text-align: center;
-                font-family: sans-serif;
+            .skill-usable-slot {
+                position: relative !important;
+                overflow: visible !important;
             }
-            .auto-fight-btn.__gp_battle_a {
-                outline: 2px solid rgba(137,180,250,0.9) !important;
-                box-shadow: 0 0 8px rgba(137,180,250,0.5) !important;
-            }
-            #__gp_battle_a_badge {
-                position: fixed;
-                pointer-events: none;
-                z-index: 2147483647;
-                display: none;
-                width: 17px; height: 17px;
-                background: #89b4fa;
-                border-radius: 50%;
-                color: #1e1e2e;
-                font-size: 10px; font-weight: bold;
-                line-height: 17px; text-align: center;
+            .skill-usable-slot::after {
+                content: '';
+                position: absolute;
+                bottom: 0; left: 0;
+                background: rgba(17,17,27,0.85);
+                color: #89b4fa;
+                font-size: 7px; font-weight: bold;
                 font-family: sans-serif;
+                padding: 1px 3px;
+                border-radius: 0 3px 0 0;
+                border: 1px solid rgba(137,180,250,0.4);
+                pointer-events: none;
+                z-index: 99;
+                line-height: 1.3;
+            }
+            .skill-usable-slot[slot="0"]::after { content: 'R3'; }
+            .skill-usable-slot[slot="1"]::after { content: '↑'; }
+            .skill-usable-slot[slot="2"]::after { content: 'X'; }
+            .skill-usable-slot[slot="3"]::after { content: 'Y'; }
+            .skill-usable-slot[slot="4"]::after { content: 'A'; }
+            .skill-usable-slot[slot="5"]::after { content: 'B'; }
+            .skill-usable-slot[slot="6"]::after { content: 'LB'; }
+            .skill-usable-slot[slot="7"]::after { content: 'RB'; }
+            .button.auto-fight-btn {
+                position: relative !important;
+                overflow: visible !important;
+            }
+            .button.auto-fight-btn::after {
+                content: '↓';
+                position: absolute;
+                bottom: 0; left: 0;
+                background: rgba(17,17,27,0.85);
+                color: #89b4fa;
+                font-size: 7px; font-weight: bold;
+                font-family: sans-serif;
+                padding: 1px 3px;
+                border-radius: 0 3px 0 0;
+                border: 1px solid rgba(137,180,250,0.4);
+                pointer-events: none;
+                z-index: 99;
+                line-height: 1.3;
             }
             .alert-accept-hotkey.__gp_alert_x {
                 outline: 2px solid #1a6b1a !important;
@@ -583,55 +593,6 @@
         (canvas || warriors[battleTarget]).dispatchEvent(
             new MouseEvent('click', { bubbles: true, cancelable: true, view: window })
         );
-    }
-
-    // ─── SKILL POPUP ─────────────────────────────────────────────────────────────
-
-    function getSkillItems() {
-        return [...document.querySelectorAll('.popup-menu.show .menu-item-skill')]
-            .filter(el => el.offsetHeight > 0);
-    }
-
-    function openSkill() { skillOpen = true; skillCursor = 0; skillRyF = 0; drawSkillCursor(); }
-
-    function closeSkill() {
-        skillOpen = false; skillRyF = 0;
-        document.querySelectorAll('.__gp_skill_sel').forEach(el => el.classList.remove('__gp_skill_sel'));
-    }
-
-    function drawSkillCursor() {
-        getSkillItems().forEach((el, i) => el.classList.toggle('__gp_skill_sel', i === skillCursor));
-    }
-
-    function moveSkillCursor(d) {
-        const a = getSkillItems(); if (!a.length) return;
-        skillCursor = (skillCursor + d + a.length) % a.length; drawSkillCursor();
-    }
-
-    function confirmSkill() { gpClick(getSkillItems()[skillCursor]); }
-
-    function openSkillMenu() {
-        const warriors = getBattleWarriors();
-        if (!warriors.length) return;
-        battleTarget = Math.min(battleTarget, warriors.length - 1);
-        const el = warriors[battleTarget]?.querySelector('.canvas-warrior-icon canvas')
-                || warriors[battleTarget];
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-        el.dispatchEvent(new MouseEvent('contextmenu', {
-            bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy,
-        }));
-        requestAnimationFrame(() => {
-            const popup = document.querySelector('.popup-menu.show.skill-popup-menu');
-            if (!popup) return;
-            const parent = popup.offsetParent;
-            const pr = parent ? parent.getBoundingClientRect() : { left: 0 };
-            const battleWin = document.querySelector('.battle-window');
-            const br = battleWin ? battleWin.getBoundingClientRect() : { right: window.innerWidth };
-            const targetLeft = br.right - popup.offsetWidth - 32;
-            popup.style.left = Math.round(targetLeft - pr.left) + 'px';
-        });
     }
 
     // ─── DIALOGUE OVERLAY ────────────────────────────────────────────────────────
@@ -1057,23 +1018,10 @@
             battleHintsEl.id = '__gp_battle_hints';
             battleHintsEl.innerHTML =
                 '<div class="__gp_bh_tile"><span class="__gp_bh_btn">LT</span> ← Zmień cel</div>' +
-                '<div class="__gp_bh_tile"><span class="__gp_bh_btn">Y</span> Krok</div>' +
-                '<div class="__gp_bh_tile"><span class="__gp_bh_btn">X</span> Wybierz</div>' +
-                '<div class="__gp_bh_tile"><span class="__gp_bh_btn">B</span> Cofnij</div>' +
                 '<div class="__gp_bh_tile"><span class="__gp_bh_btn">RT</span> → Zmień cel</div>';
             document.documentElement.appendChild(battleHintsEl);
         }
         return battleHintsEl;
-    }
-
-    function getBattleABadge() {
-        if (!battleABadgeEl) {
-            battleABadgeEl = document.createElement('div');
-            battleABadgeEl.id = '__gp_battle_a_badge';
-            battleABadgeEl.textContent = 'A';
-            document.documentElement.appendChild(battleABadgeEl);
-        }
-        return battleABadgeEl;
     }
 
     function createExploreHints() {
@@ -1114,34 +1062,25 @@
         exploreHintsEl.style.top = Math.round(vr.top - cr.top + 28) + 'px';
     }
 
+    function clickBattleSkillSlot(slot) {
+        const el = document.querySelector(`.skill-usable-slot[slot="${slot}"] .battle-skill`);
+        if (el) gpClick(el);
+    }
+
     function showBattleUI() {
         getBattleHintsEl().style.display = 'flex';
-        getBattleABadge().style.display = 'block';
     }
 
     function hideBattleUI() {
-        if (battleHintsEl)  battleHintsEl.style.display  = 'none';
-        if (battleABadgeEl) battleABadgeEl.style.display = 'none';
-        document.querySelectorAll('.__gp_battle_a').forEach(el => el.classList.remove('__gp_battle_a'));
+        if (battleHintsEl) battleHintsEl.style.display = 'none';
     }
 
     function updateBattleHintsPos() {
         const win = document.querySelector('.battle-window');
-        if (!win) return;
+        if (!win || !battleHintsEl) return;
         const r = win.getBoundingClientRect();
-        if (battleHintsEl) {
-            battleHintsEl.style.left = Math.round(r.left + r.width / 2) + 'px';
-            battleHintsEl.style.top  = Math.round(r.top + 8) + 'px';
-        }
-        const fightBtn = document.querySelector('.button.auto-fight-btn');
-        if (fightBtn) {
-            fightBtn.classList.add('__gp_battle_a');
-            if (battleABadgeEl) {
-                const rb = fightBtn.getBoundingClientRect();
-                battleABadgeEl.style.left = Math.round(rb.right - 9) + 'px';
-                battleABadgeEl.style.top  = Math.round(rb.top  - 9) + 'px';
-            }
-        }
+        battleHintsEl.style.left = Math.round(r.left + r.width / 2) + 'px';
+        battleHintsEl.style.top  = Math.round(r.top + 8) + 'px';
     }
 
     function showAlertHighlight() {
@@ -1520,19 +1459,25 @@
             }
             prevDpadL = btnDpadL;
 
-            // D-pad down → wyślij zaproszenie do grupy (klawisz G)
+            // D-pad down → szybka walka (battle) / zaproszenie do grupy G (explore)
             const btnDpadD = !!gp.buttons[13]?.pressed;
             if (btnDpadD && !prevDpadD) {
-                const el = document.activeElement || document.body;
-                el.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', code: 'KeyG', bubbles: true, cancelable: true }));
-                el.dispatchEvent(new KeyboardEvent('keyup',   { key: 'g', code: 'KeyG', bubbles: true, cancelable: true }));
+                if (battle) {
+                    gpClick(document.querySelector('.button.auto-fight-btn'));
+                } else {
+                    const el = document.activeElement || document.body;
+                    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', code: 'KeyG', bubbles: true, cancelable: true }));
+                    el.dispatchEvent(new KeyboardEvent('keyup',   { key: 'g', code: 'KeyG', bubbles: true, cancelable: true }));
+                }
             }
             prevDpadD = btnDpadD;
 
-            // D-pad up → otwórz/zamknij okno umiejętności
+            // D-pad up → ruch (battle) / okno umiejętności (explore)
             const btnDpadU = !!gp.buttons[12]?.pressed;
-            if (btnDpadU && !prevDpadU)
-                gpClick(document.querySelector('.widget-button.widget-skills'));
+            if (btnDpadU && !prevDpadU) {
+                if (battle) clickBattleSkillSlot(1);
+                else gpClick(document.querySelector('.widget-button.widget-skills'));
+            }
             prevDpadU = btnDpadU;
 
             // LT/RT → switch bag (nie podczas walki, gwMenu, dialogu)
@@ -1609,10 +1554,7 @@
                         gpClick(document.querySelector('.skills-window .skill-learn-btn .button'));
                     } else {
                         if (dlgOpen) confirmDlg();
-                        if (battle) {
-                            if (skillOpen) confirmSkill();
-                            else openSkillMenu();
-                        }
+                        if (battle) clickBattleSkillSlot(2);
                         if (!dlgOpen && !battle) {
                             if (relogOpen) confirmRelog();
                             else if (invOpen) activateItem();
@@ -1816,10 +1758,6 @@
                     }
                 } else {
                     // ─── BATTLE ───────────────────────────────────────────────────
-                    const skillItems = getSkillItems();
-                    if (!skillOpen && skillItems.length) openSkill();
-                    else if (skillOpen && !skillItems.length) closeSkill();
-
                     const btnRT = !!gp.buttons[7]?.pressed;
                     if (btnRT && !prevRT) cycleBattleTarget(1);
                     prevRT = btnRT;
@@ -1828,37 +1766,40 @@
                     if (btnLT && !prevLT) cycleBattleTarget(-1);
                     prevLT = btnLT;
 
-                    if (skillOpen) {
-                        const ly = gp.axes[1] ?? 0;
-                        if (Math.abs(ly) > R_THR) {
-                            if (skillRyF === 0 || (skillRyF > REP_DELAY && skillRyF % REP_STEP === 0))
-                                moveSkillCursor(ly > 0 ? 1 : -1);
-                            skillRyF++;
-                        } else { skillRyF = 0; }
+                    // LB → slot 6, RB → slot 7
+                    const btnLB_b = !!gp.buttons[4]?.pressed;
+                    if (btnLB_b && !prevLB) clickBattleSkillSlot(6);
+                    prevLB = btnLB_b;
 
-                        const btnB = !!gp.buttons[BTN_B]?.pressed;
-                        if (btnB && !prevB)
-                            gpClick(document.querySelector('.popup-menu__header'));
-                        prevB = btnB;
-                    } else {
-                        const btnY = !!gp.buttons[BTN_Y]?.pressed;
-                        if (btnY && !prevY)
-                            gpClick(document.querySelector('.battle-skill[battle-skill-id="-2"] .icon'));
-                        prevY = btnY;
+                    const btnRB_b = !!gp.buttons[5]?.pressed;
+                    if (btnRB_b && !prevRB) clickBattleSkillSlot(7);
+                    prevRB = btnRB_b;
 
-                        const btnA = !!gp.buttons[BTN_A]?.pressed;
-                        if (btnA && !prevA)
-                            gpClick(document.querySelector('.button.auto-fight-btn'));
-                        prevA = btnA;
+                    // R3 → slot 0
+                    const btnR3 = !!gp.buttons[BTN_R3]?.pressed;
+                    if (btnR3 && !prevR3) clickBattleSkillSlot(0);
+                    prevR3 = btnR3;
 
-                        const dead = isPlayerDead();
-                        document.querySelector('.button.close-battle-ground')
-                            ?.classList.toggle('__gp_escape_hl', dead);
+                    // Y → slot 3
+                    const btnY = !!gp.buttons[BTN_Y]?.pressed;
+                    if (btnY && !prevY) clickBattleSkillSlot(3);
+                    prevY = btnY;
 
-                        const btnB = !!gp.buttons[BTN_B]?.pressed;
-                        if (btnB && !prevB && dead) leaveBattle();
-                        prevB = btnB;
+                    // A → slot 4
+                    const btnA = !!gp.buttons[BTN_A]?.pressed;
+                    if (btnA && !prevA) clickBattleSkillSlot(4);
+                    prevA = btnA;
+
+                    // B → slot 5 (lub opuść walkę gdy gracz martwy)
+                    const dead = isPlayerDead();
+                    document.querySelector('.button.close-battle-ground')
+                        ?.classList.toggle('__gp_escape_hl', dead);
+                    const btnB = !!gp.buttons[BTN_B]?.pressed;
+                    if (btnB && !prevB) {
+                        if (dead) leaveBattle();
+                        else clickBattleSkillSlot(5);
                     }
+                    prevB = btnB;
                 }
             }
 
