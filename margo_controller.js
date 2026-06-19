@@ -178,24 +178,21 @@
             .skill-usable-slot[slot="5"]::after { content: 'B'; }
             .skill-usable-slot[slot="6"]::after { content: 'LB'; }
             .skill-usable-slot[slot="7"]::after { content: 'RB'; }
-            .button.auto-fight-btn {
+            .__gp_autofight_hl {
+                outline: 2px solid rgba(137,180,250,0.9) !important;
+                box-shadow: 0 0 8px rgba(137,180,250,0.5) !important;
                 position: relative !important;
                 overflow: visible !important;
             }
-            .button.auto-fight-btn::after {
+            .__gp_autofight_hl::after {
                 content: '↓';
                 position: absolute;
-                bottom: 0; left: 0;
-                background: rgba(17,17,27,0.85);
-                color: #89b4fa;
-                font-size: 7px; font-weight: bold;
-                font-family: sans-serif;
-                padding: 1px 3px;
-                border-radius: 0 3px 0 0;
-                border: 1px solid rgba(137,180,250,0.4);
-                pointer-events: none;
-                z-index: 99;
-                line-height: 1.3;
+                top: -8px; right: -8px;
+                width: 16px; height: 16px;
+                background: rgba(137,180,250,0.9); border-radius: 50%;
+                color: #1e1e2e; font-size: 10px; font-weight: bold;
+                line-height: 16px; text-align: center; font-family: sans-serif;
+                pointer-events: none; z-index: 10;
             }
             .alert-accept-hotkey.__gp_alert_x {
                 outline: 2px solid #1a6b1a !important;
@@ -1073,6 +1070,8 @@
 
     function hideBattleUI() {
         if (battleHintsEl) battleHintsEl.style.display = 'none';
+        document.querySelectorAll('.__gp_autofight_hl')
+            .forEach(el => el.classList.remove('__gp_autofight_hl'));
     }
 
     function updateBattleHintsPos() {
@@ -1081,6 +1080,10 @@
         const r = win.getBoundingClientRect();
         battleHintsEl.style.left = Math.round(r.left + r.width / 2) + 'px';
         battleHintsEl.style.top  = Math.round(r.top + 8) + 'px';
+        const fightBtn = document.querySelector('.button.auto-fight-btn');
+        document.querySelectorAll('.__gp_autofight_hl')
+            .forEach(el => el.classList.remove('__gp_autofight_hl'));
+        if (fightBtn) fightBtn.classList.add('__gp_autofight_hl');
     }
 
     function showAlertHighlight() {
@@ -1464,7 +1467,9 @@
             const btnDpadD = !!gp.buttons[13]?.pressed;
             if (btnDpadD && !prevDpadD) {
                 if (battle) {
-                    gpClick(document.querySelector('.button.auto-fight-btn'));
+                    const fightEl = document.querySelector('.button.auto-fight-btn');
+                    gpClick(fightEl);
+                    fightEl?.click();
                 } else {
                     const el = document.activeElement || document.body;
                     el.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', code: 'KeyG', bubbles: true, cancelable: true }));
