@@ -348,7 +348,6 @@
             .__gp_widget_sel {
                 outline: 2px solid rgba(137,180,250,0.9) !important;
                 box-shadow: 0 0 8px rgba(137,180,250,0.5) !important;
-                position: relative !important;
                 overflow: visible !important;
             }
             .__gp_widget_sel::after {
