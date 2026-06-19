@@ -1551,25 +1551,28 @@
             if (!captchaOpen && nowCaptchaOpen) openCaptcha();
             else if (captchaOpen && !nowCaptchaOpen) closeCaptcha();
 
-            // D-pad right → toggle inventory (blokada w sklepie)
+            // D-pad right
             const btnDpadR = !!gp.buttons[15]?.pressed;
-            if (btnDpadR && !prevDpadR && !shopOpen) {
-                if (invOpen) hideInv(); else showInv();
+            if (btnDpadR && !prevDpadR) {
+                if (widgetMenuOpen) widgetMoveX(1);
+                else if (!shopOpen) { if (invOpen) hideInv(); else showInv(); }
             }
             prevDpadR = btnDpadR;
 
-            // D-pad left → atak slot 0 (battle) / toggle relogger (explore)
+            // D-pad left
             const btnDpadL = !!gp.buttons[14]?.pressed;
             if (btnDpadL && !prevDpadL) {
-                if (battle) clickBattleSkillSlot(0);
+                if (widgetMenuOpen) widgetMoveX(-1);
+                else if (battle) clickBattleSkillSlot(0);
                 else if (relogOpen) closeRelog(); else openRelog();
             }
             prevDpadL = btnDpadL;
 
-            // D-pad down → szybka walka (battle) / zaproszenie do grupy G (explore)
+            // D-pad down
             const btnDpadD = !!gp.buttons[13]?.pressed;
             if (btnDpadD && !prevDpadD) {
-                if (battle) {
+                if (widgetMenuOpen) widgetMoveY(1);
+                else if (battle) {
                     const fightEl = document.querySelector('.button.auto-fight-btn');
                     gpClick(fightEl);
                     fightEl?.click();
@@ -1581,11 +1584,11 @@
             }
             prevDpadD = btnDpadD;
 
-            // D-pad up → ruch (battle) / selektor widgetów (explore toggle)
+            // D-pad up → ruch (battle) / nawigacja w górę lub otwórz/zamknij selektor
             const btnDpadU = !!gp.buttons[12]?.pressed;
             if (btnDpadU && !prevDpadU) {
                 if (battle) clickBattleSkillSlot(1);
-                else if (widgetMenuOpen) closeWidgetMenu();
+                else if (widgetMenuOpen) widgetMoveY(-1);
                 else openWidgetMenu();
             }
             prevDpadU = btnDpadU;
@@ -1786,17 +1789,7 @@
                     const btnA = !!gp.buttons[BTN_A]?.pressed; prevA = btnA;
                 } else if (widgetMenuOpen) {
                     // ─── WIDGET MENU ──────────────────────────────────────────────
-                    const rx = gp.axes[2] ?? 0, ry = gp.axes[3] ?? 0;
-                    if (Math.abs(rx) > R_THR) {
-                        if (widgetMenuRxF === 0 || (widgetMenuRxF > REP_DELAY && widgetMenuRxF % REP_STEP === 0))
-                            widgetMoveX(rx > 0 ? 1 : -1);
-                        widgetMenuRxF++;
-                    } else { widgetMenuRxF = 0; }
-                    if (Math.abs(ry) > R_THR) {
-                        if (widgetMenuRyF === 0 || (widgetMenuRyF > REP_DELAY && widgetMenuRyF % REP_STEP === 0))
-                            widgetMoveY(ry > 0 ? 1 : -1);
-                        widgetMenuRyF++;
-                    } else { widgetMenuRyF = 0; }
+                    // nawigacja: D-pad (obsługiwane wyżej na poziomie globalnym)
                     const btnB_wm = !!gp.buttons[BTN_B]?.pressed;
                     if (btnB_wm && !prevB) closeWidgetMenu();
                     prevB = btnB_wm;
