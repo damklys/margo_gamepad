@@ -158,19 +158,19 @@
             .skill-usable-slot::after {
                 content: '';
                 position: absolute;
-                bottom: 0; left: 0;
+                top: 0; left: 0;
                 background: rgba(17,17,27,0.85);
                 color: #89b4fa;
                 font-size: 7px; font-weight: bold;
                 font-family: sans-serif;
                 padding: 1px 3px;
-                border-radius: 0 3px 0 0;
+                border-radius: 0 0 3px 0;
                 border: 1px solid rgba(137,180,250,0.4);
                 pointer-events: none;
                 z-index: 99;
                 line-height: 1.3;
             }
-            .skill-usable-slot[slot="0"]::after { content: 'R3'; }
+            .skill-usable-slot[slot="0"]::after { content: '←'; }
             .skill-usable-slot[slot="1"]::after { content: '↑'; }
             .skill-usable-slot[slot="2"]::after { content: 'X'; }
             .skill-usable-slot[slot="3"]::after { content: 'Y'; }
@@ -1452,10 +1452,11 @@
             }
             prevDpadR = btnDpadR;
 
-            // D-pad left → toggle relogger (tylko explore)
+            // D-pad left → atak slot 0 (battle) / toggle relogger (explore)
             const btnDpadL = !!gp.buttons[14]?.pressed;
-            if (btnDpadL && !prevDpadL && !battle) {
-                if (relogOpen) closeRelog(); else openRelog();
+            if (btnDpadL && !prevDpadL) {
+                if (battle) clickBattleSkillSlot(0);
+                else if (relogOpen) closeRelog(); else openRelog();
             }
             prevDpadL = btnDpadL;
 
@@ -1775,9 +1776,7 @@
                     if (btnRB_b && !prevRB) clickBattleSkillSlot(7);
                     prevRB = btnRB_b;
 
-                    // R3 → slot 0
                     const btnR3 = !!gp.buttons[BTN_R3]?.pressed;
-                    if (btnR3 && !prevR3) clickBattleSkillSlot(0);
                     prevR3 = btnR3;
 
                     // Y → slot 3
