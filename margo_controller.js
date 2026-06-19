@@ -1083,6 +1083,7 @@
         exploreHintsEl.id = '__gp_explore_hints';
         Object.assign(exploreHintsEl.style, {
             position: 'absolute',
+            left: '50%',
             transform: 'translateX(-50%)',
             pointerEvents: 'none',
             zIndex: '99999',
@@ -1110,8 +1111,7 @@
         const cr = container.getBoundingClientRect();
         const canvas = document.getElementById('GAME_CANVAS');
         const vr = canvas ? canvas.getBoundingClientRect() : cr;
-        exploreHintsEl.style.left = Math.round(vr.left - cr.left + vr.width / 2) + 'px';
-        exploreHintsEl.style.top  = Math.round(vr.top  - cr.top  + 8) + 'px';
+        exploreHintsEl.style.top = Math.round(vr.top - cr.top + 28) + 'px';
     }
 
     function showBattleUI() {
