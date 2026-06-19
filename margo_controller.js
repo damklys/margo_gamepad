@@ -57,7 +57,7 @@
     let relogOpen = false, relogCursor = 0, relogRxF = 0;
     let lootOpen = false, lootCursor = 0, lootOnAccept = false, lootRxF = 0, lootRyF = 0;
     let skillsWinOpen = false, skillsWinCursor = 0, skillsWinLyF = 0, skillsWinLxF = 0;
-    let widgetMenuOpen = false, widgetMenuCol = 0, widgetMenuRow = 0, widgetMenuIdx = 0;
+    let widgetMenuOpen = false, widgetMenuRow = 0, widgetMenuSide = 0, widgetMenuIdx = 0;
     let widgetMenuRxF = 0, widgetMenuRyF = 0;
     const CAPTCHA_COLS = 3, CAPTCHA_ROWS = 2;
     let captchaOpen = false, captchaC = 0, captchaR = 0, captchaLxF = 0, captchaLyF = 0;
@@ -1078,18 +1078,33 @@
     }
 
     // ─── WIDGET BAR SELECTOR ──────────────────────────────────────────────────────
-    // Grid: col 0 (left) = [top-left, bottom-left-additional, bottom-left]
-    //       col 1 (right) = [top-right, bottom-right]
-    // R-stick X: navigate tiles; at edge wraps to adjacent column (same/clamped row)
-    // R-stick Y: navigate rows within current column
+    // Wiersze (dynamiczne):
+    //   row 0: [top-left          | top-right]
+    //   row 1: [bot-left-add      | bot-right-add]  ← tylko gdy któryś istnieje i widoczny
+    //   row 2: [bot-left          | bot-right]
+    // side 0 = lewa strona, side 1 = prawa strona
+    // R-stick X: kafelki w wierszu, przekracza krawędź → przełącza side (wrap kołowy)
+    // R-stick Y: zmiana wiersza po tej samej stronie
+    // D-pad ← → ↑ ↓ – fallback (te same akcje)
+    // D-pad ↑ od wiersza 0 zamyka selektor
 
-    const WIDGET_GRID = [
-        ['.top-left.main-buttons-container', '.bottom-left-additional.main-buttons-container', '.bottom-left.main-buttons-container'],
-        ['.top-right.main-buttons-container', '.bottom-right.main-buttons-container'],
-    ];
+    function getWidgetRows() {
+        const rows = [
+            ['.top-left.main-buttons-container',            '.top-right.main-buttons-container'],
+        ];
+        const hasAdd =
+            (document.querySelector('.bottom-left-additional.main-buttons-container')?.offsetHeight  ?? 0) > 0 ||
+            (document.querySelector('.bottom-right-additional.main-buttons-container')?.offsetHeight ?? 0) > 0;
+        if (hasAdd) {
+            rows.push(['.bottom-left-additional.main-buttons-container', '.bottom-right-additional.main-buttons-container']);
+        }
+        rows.push(['.bottom-left.main-buttons-container', '.bottom-right.main-buttons-container']);
+        return rows;
+    }
 
-    function getWidgetItems(col, row) {
-        const sel = WIDGET_GRID[col]?.[row];
+    function getWidgetSideItems(row, side) {
+        const rows = getWidgetRows();
+        const sel = rows[row]?.[side];
         if (!sel) return [];
         const bar = document.querySelector(sel);
         if (!bar) return [];
@@ -1100,13 +1115,13 @@
     function drawWidgetMenuCursor() {
         document.querySelectorAll('.__gp_widget_sel')
             .forEach(el => el.classList.remove('__gp_widget_sel'));
-        const items = getWidgetItems(widgetMenuCol, widgetMenuRow);
+        const items = getWidgetSideItems(widgetMenuRow, widgetMenuSide);
         if (items[widgetMenuIdx]) items[widgetMenuIdx].classList.add('__gp_widget_sel');
     }
 
     function openWidgetMenu() {
         widgetMenuOpen = true;
-        widgetMenuCol = 0; widgetMenuRow = 0; widgetMenuIdx = 0;
+        widgetMenuRow = 0; widgetMenuSide = 0; widgetMenuIdx = 0;
         drawWidgetMenuCursor();
     }
 
@@ -1118,39 +1133,44 @@
     }
 
     function confirmWidgetMenu() {
-        const items = getWidgetItems(widgetMenuCol, widgetMenuRow);
+        const items = getWidgetSideItems(widgetMenuRow, widgetMenuSide);
         if (items[widgetMenuIdx]) gpClick(items[widgetMenuIdx]);
         closeWidgetMenu();
     }
 
     function widgetMoveX(d) {
-        const items = getWidgetItems(widgetMenuCol, widgetMenuRow);
+        const items = getWidgetSideItems(widgetMenuRow, widgetMenuSide);
         const newIdx = widgetMenuIdx + d;
         if (newIdx >= 0 && newIdx < items.length) {
             widgetMenuIdx = newIdx;
         } else {
-            // edge reached → switch column
-            const targetCol = widgetMenuCol === 0 ? 1 : 0;
-            const targetRow = Math.min(widgetMenuRow, WIDGET_GRID[targetCol].length - 1);
-            const targetItems = getWidgetItems(targetCol, targetRow);
-            if (targetItems.length > 0) {
-                widgetMenuCol = targetCol;
-                widgetMenuRow = targetRow;
-                widgetMenuIdx = d > 0 ? 0 : targetItems.length - 1;
+            const otherSide = 1 - widgetMenuSide;
+            const otherItems = getWidgetSideItems(widgetMenuRow, otherSide);
+            if (otherItems.length > 0) {
+                widgetMenuSide = otherSide;
+                widgetMenuIdx = d > 0 ? 0 : otherItems.length - 1;
+            } else if (items.length > 0) {
+                widgetMenuIdx = d > 0 ? 0 : items.length - 1;
             }
         }
         drawWidgetMenuCursor();
     }
 
     function widgetMoveY(d) {
-        const col = WIDGET_GRID[widgetMenuCol];
+        const rows = getWidgetRows();
         const newRow = widgetMenuRow + d;
-        if (newRow >= 0 && newRow < col.length) {
-            const items = getWidgetItems(widgetMenuCol, newRow);
-            if (items.length > 0) {
-                widgetMenuRow = newRow;
-                widgetMenuIdx = Math.min(widgetMenuIdx, items.length - 1);
-            }
+        if (newRow < 0) { closeWidgetMenu(); return; }
+        if (newRow >= rows.length) return;
+        let side = widgetMenuSide;
+        let items = getWidgetSideItems(newRow, side);
+        if (!items.length) {
+            side = 1 - side;
+            items = getWidgetSideItems(newRow, side);
+        }
+        if (items.length) {
+            widgetMenuRow = newRow;
+            widgetMenuSide = side;
+            widgetMenuIdx = Math.min(widgetMenuIdx, items.length - 1);
         }
         drawWidgetMenuCursor();
     }
@@ -1587,7 +1607,7 @@
             const btnDpadU = !!gp.buttons[12]?.pressed;
             if (btnDpadU && !prevDpadU) {
                 if (battle) clickBattleSkillSlot(1);
-                else if (widgetMenuOpen) widgetMoveY(-1);
+                else if (widgetMenuOpen) widgetMoveY(-1); // row 0 → closeWidgetMenu
                 else openWidgetMenu();
             }
             prevDpadU = btnDpadU;
@@ -1788,7 +1808,18 @@
                     const btnA = !!gp.buttons[BTN_A]?.pressed; prevA = btnA;
                 } else if (widgetMenuOpen) {
                     // ─── WIDGET MENU ──────────────────────────────────────────────
-                    // nawigacja: D-pad (obsługiwane wyżej na poziomie globalnym)
+                    // R-stick (primary) + D-pad (fallback, obsługiwane na poziomie globalnym)
+                    const rx = gp.axes[2] ?? 0, ry = gp.axes[3] ?? 0;
+                    if (Math.abs(rx) > R_THR) {
+                        if (widgetMenuRxF === 0 || (widgetMenuRxF > REP_DELAY && widgetMenuRxF % REP_STEP === 0))
+                            widgetMoveX(rx > 0 ? 1 : -1);
+                        widgetMenuRxF++;
+                    } else { widgetMenuRxF = 0; }
+                    if (Math.abs(ry) > R_THR) {
+                        if (widgetMenuRyF === 0 || (widgetMenuRyF > REP_DELAY && widgetMenuRyF % REP_STEP === 0))
+                            widgetMoveY(ry > 0 ? 1 : -1);
+                        widgetMenuRyF++;
+                    } else { widgetMenuRyF = 0; }
                     const btnB_wm = !!gp.buttons[BTN_B]?.pressed;
                     if (btnB_wm && !prevB) closeWidgetMenu();
                     prevB = btnB_wm;
