@@ -4,7 +4,7 @@
     // ─── Left Joy ────────────────────────────────────────────────
 
     // GameSir Mac Nintendo Layout
-    const BTN_A = 0, BTN_B = 1, BTN_X = 2, BTN_Y = 3, BTN_L3 = 10, BTN_R3 = 11;
+    const BTN_A = 0, BTN_B = 1, BTN_X = 2, BTN_Y = 3, BTN_L3 = 10, BTN_R3 = 11, BTN_HOME = 16;
 
     const AXIS_THRESHOLD = 0.3;
     const SWITCH_THR = 0.2; 
@@ -50,7 +50,8 @@
     let invOpen = false;
     let curC = 0, curR = 0, curBag = 0;
     let prevY = false, prevL = false, prevR = false, prevA = false, prevX = false, prevB = false, prevDpadR = false, prevDpadL = false, prevDpadD = false, prevDpadU = false, prevRT = false, prevLT = false, prevL3 = false, prevR3 = false;
-    let prevLB = false, prevRB = false;
+    let prevLB = false, prevRB = false, prevHome = false;
+    let hintsHidden = false;
     let rxF = 0, ryF = 0;
     let dlgOpen = false, dlgCursor = 0, dlgRyF = 0;
     let relogOpen = false, relogCursor = 0, relogRxF = 0;
@@ -1056,14 +1057,14 @@
             alignItems: 'center',
         });
         exploreHintsEl.innerHTML =
-            '<div class="__gp_bh_tile"><span class="__gp_bh_btn">LB</span> ← Zestaw</div>' +
-            '<div class="__gp_bh_tile"><span class="__gp_bh_btn">LT</span> ← Torba</div>' +
+            '<div class="__gp_bh_tile"><span class="__gp_bh_btn">LB</span> ← EQ</div>' +
+            '<div class="__gp_bh_tile"><span class="__gp_bh_btn">LT</span> ← Bag</div>' +
             '<div class="__gp_bh_tile"><span class="__gp_bh_btn">X</span> [Q] Mob</div>' +
             '<div class="__gp_bh_tile"><span class="__gp_bh_btn">Y</span> NPC</div>' +
             '<div class="__gp_bh_tile"><span class="__gp_bh_btn">B</span> [T] Mob</div>' +
             '<div class="__gp_bh_tile"><span class="__gp_bh_btn">A</span> PvP</div>' +
-            '<div class="__gp_bh_tile"><span class="__gp_bh_btn">RT</span> Torba →</div>' +
-            '<div class="__gp_bh_tile"><span class="__gp_bh_btn">RB</span> Zestaw →</div>';
+            '<div class="__gp_bh_tile"><span class="__gp_bh_btn">RT</span> Bag →</div>' +
+            '<div class="__gp_bh_tile"><span class="__gp_bh_btn">RB</span> EQ →</div>';
         container.appendChild(exploreHintsEl);
     }
 
@@ -1146,7 +1147,7 @@
     }
 
     function showBattleUI() {
-        getBattleHintsEl().style.display = 'flex';
+        getBattleHintsEl(); // ensure element exists
     }
 
     function hideBattleUI() {
@@ -1479,17 +1480,23 @@
         if (gp) {
             const battle = (document.querySelector('.battle-window')?.offsetHeight ?? 0) > 0;
 
+            // Home → toggle hints visibility
+            const btnHome = !!gp.buttons[BTN_HOME]?.pressed;
+            if (btnHome && !prevHome) hintsHidden = !hintsHidden;
+            prevHome = btnHome;
+
             // battle UI hints
             if (!prevBattle && battle) showBattleUI();
             else if (prevBattle && !battle) hideBattleUI();
             if (battle) updateBattleHintsPos();
+            if (battleHintsEl) battleHintsEl.style.display = (battle && !hintsHidden) ? 'flex' : 'none';
             prevBattle = battle;
 
             // explore hints
             if (!exploreHintsEl) createExploreHints();
             if (exploreHintsEl) {
                 const exploreActive = !battle && !gwMenuOpen && !shopOpen && !dlgOpen && !captchaOpen && !alertOpen && !lootOpen && !skillsWinOpen && !widgetMenuOpen;
-                exploreHintsEl.style.display = exploreActive ? 'flex' : 'none';
+                exploreHintsEl.style.display = (exploreActive && !hintsHidden) ? 'flex' : 'none';
                 if (exploreActive) updateExploreHintsPos();
             }
 
